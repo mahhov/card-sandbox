@@ -1,10 +1,10 @@
 // dependencies
-var express = require('express');
-var mysql = require('mysql');
-var bodyParser = require('body-parser');
+let express = require('express');
+let mysql = require('mysql');
+let bodyParser = require('body-parser');
 
 // setup
-var app = express();
+let app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
@@ -14,7 +14,7 @@ app.listen(8080, function () {
     console.log('express listen 8080')
 });
 
-var con = mysql.createConnection({
+let con = mysql.createConnection({
     host: "localhost",
     user: "cardSandboxDbUser",
     database: "cardSandboxDb"
