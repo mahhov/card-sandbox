@@ -27,7 +27,7 @@ con.connect(function (err) {
 
 // routes
 app.get('/script/', function (req, res) {
-    let query = 'SELECT name, owner, body FROM script WHERE name=';
+    let query = 'SELECT name, owner, body FROM script WHERE owner="default"';
     con.query(query, function (err, result, fields) {
         if (err) throw err;
         res.send(result);
@@ -35,11 +35,11 @@ app.get('/script/', function (req, res) {
 });
 
 app.get('/script/:name', function (req, res) {
-    let query = 'SELECT name, owner, body FROM script WHERE name=?';
+    let query = 'SELECT name, owner, body FROM script WHERE name=? AND owner="default"';
     let values = req.params.name;
     con.query(query, values, function (err, result, fields) {
         if (err) throw err;
-        res.send(result);
+        res.send(result[0]);
     });
 });
 
@@ -53,7 +53,7 @@ app.put('/script/:name', function (req, res) {
 });
 
 app.delete('/script/:name', function (req, res) {
-    let query = 'DELETE FROM script WHERE name=?';
+    let query = 'DELETE FROM script WHERE name=? AND owner="default"';
     let values = req.params.name;
     con.query(query, values, function (err, result, fields) {
         if (err) throw err;
