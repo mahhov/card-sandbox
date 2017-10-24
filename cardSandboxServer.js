@@ -15,14 +15,14 @@ app.listen(8080, function () {
 });
 
 let con = mysql.createConnection({
-    host: "localhost",
-    user: "cardSandboxDbUser",
-    database: "cardSandboxDb"
+    host: 'localhost',
+    user: 'cardSandboxDbUser',
+    database: 'cardSandboxDb'
 });
 
 con.connect(function (err) {
     if (err) throw err;
-    console.log("mysql connect");
+    console.log('mysql connect');
 });
 
 // routes
