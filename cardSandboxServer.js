@@ -31,7 +31,10 @@ app.get('/script/:user', function (req, res) {
     let values = [req.params.user];
     con.query(query, values, function (err, result) {
         if (err) throw err;
-        res.send(result);
+        if (result.length > 0)
+            res.status(200).send(result);
+        else
+            res.status(204).send();
     });
 });
 
@@ -40,7 +43,10 @@ app.get('/script/:user/:name', function (req, res) {
     let values = [req.params.name, req.params.user];
     con.query(query, values, function (err, result) {
         if (err) throw err;
-        res.send(result[0]);
+        if (result.length > 0)
+            res.status(200).send(result[0]);
+        else
+            res.status(204).send();
     });
 });
 
@@ -49,15 +55,18 @@ app.put('/script/:user/:name', function (req, res) {
     let values = [req.params.name, req.params.user, req.body, req.body];
     con.query(query, values, function (err) {
         if (err) throw err;
-        res.send();
+        res.status(200).send();
     });
 });
 
 app.delete('/script/:user/:name', function (req, res) {
     let query = 'DELETE FROM script WHERE name=? AND owner=?';
     let values = [req.params.name, req.params.user];
-    con.query(query, values, function (err) {
+    con.query(query, values, function (err, result) {
         if (err) throw err;
-        res.send();
+        if (result.affectedRows > 0)
+            res.status(200).send();
+        else
+            res.status(204).send();
     });
 });
