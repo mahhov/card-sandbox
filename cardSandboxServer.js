@@ -26,36 +26,37 @@ con.connect(function (err) {
 });
 
 // routes
-app.get('/script/', function (req, res) {
-    let query = 'SELECT name, owner, body FROM script WHERE owner="default"';
-    con.query(query, function (err, result, fields) {
+app.get('/script/:user', function (req, res) {
+    let query = 'SELECT name, owner, body FROM script WHERE owner=?';
+    let values = [req.params.user];
+    con.query(query, values, function (err, result) {
         if (err) throw err;
         res.send(result);
     });
 });
 
-app.get('/script/:name', function (req, res) {
-    let query = 'SELECT name, owner, body FROM script WHERE name=? AND owner="default"';
-    let values = req.params.name;
-    con.query(query, values, function (err, result, fields) {
+app.get('/script/:user/:name', function (req, res) {
+    let query = 'SELECT name, owner, body FROM script WHERE name=? AND owner=?';
+    let values = [req.params.name, req.params.user];
+    con.query(query, values, function (err, result) {
         if (err) throw err;
         res.send(result[0]);
     });
 });
 
-app.put('/script/:name', function (req, res) {
-    let query = 'INSERT INTO SCRIPT (name, owner, body) VALUES (?, "default", ?) ON DUPLICATE KEY UPDATE body=?';
-    let values = [req.params.name, req.body, req.body];
-    con.query(query, values, function (err, result, fields) {
+app.put('/script/:user/:name', function (req, res) {
+    let query = 'INSERT INTO SCRIPT (name, owner, body) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE body=?';
+    let values = [req.params.name, req.params.user, req.body, req.body];
+    con.query(query, values, function (err) {
         if (err) throw err;
         res.send();
     });
 });
 
-app.delete('/script/:name', function (req, res) {
-    let query = 'DELETE FROM script WHERE name=? AND owner="default"';
-    let values = req.params.name;
-    con.query(query, values, function (err, result, fields) {
+app.delete('/script/:user/:name', function (req, res) {
+    let query = 'DELETE FROM script WHERE name=? AND owner=?';
+    let values = [req.params.name, req.params.user];
+    con.query(query, values, function (err) {
         if (err) throw err;
         res.send();
     });
