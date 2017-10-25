@@ -14,6 +14,11 @@ app.listen(8080, () => {
     console.log('express listen 8080')
 });
 
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+});
+
 let con = mysql.createConnection({
     host: 'localhost',
     user: 'cardSandboxDbUser',
