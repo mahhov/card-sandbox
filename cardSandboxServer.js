@@ -57,22 +57,70 @@ app.get('/script/:user/:name', (req, res) => {
 });
 
 app.put('/script/:user/:name', (req, res) => {
-    let query = 'INSERT INTO SCRIPT (name, owner, body) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE body=?';
-    let values = [req.params.name, req.params.user, req.body, req.body];
-    con.query(query, values, (err) => {
-        if (err) throw err;
-        res.status(200).send();
+    authenticate(req.get('authenticationToken'), req.params.user, (authenticated) => {
+        if (!authenticated)
+            res.status(403).send();
+        else {
+            let query = 'INSERT INTO SCRIPT (name, owner, body) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE body=?';
+            let values = [req.params.name, req.params.user, req.body, req.body];
+            con.query(query, values, (err) => {
+                if (err) throw err;
+                res.status(200).send();
+            });
+        }
     });
 });
 
 app.delete('/script/:user/:name', (req, res) => {
-    let query = 'DELETE FROM script WHERE name=? AND owner=?';
-    let values = [req.params.name, req.params.user];
+    authenticate(req.get('authenticationToken'), req.params.user, (authenticated) => {
+        if (!authenticated)
+            res.status(403).send();
+        else {
+            let query = 'DELETE FROM script WHERE name=? AND owner=?';
+            let values = [req.params.name, req.params.user];
+            con.query(query, values, (err, result) => {
+                if (err) throw err;
+                if (result.affectedRows > 0)
+                    res.status(200).send();
+                else
+                    res.status(204).send();
+            });
+        }
+    });
+});
+
+app.post('/token', (req, res) => {
+    let token = generateToken();
+    let query = 'UPDATE authentication SET token=?, lastActivity=? WHERE name=? AND hashedPassword=?'; // todo: ensure lastactivity stamp recent
+    let values = [token, new Date(), req.body.name, req.body.password, req.body.name];
     con.query(query, values, (err, result) => {
         if (err) throw err;
         if (result.affectedRows > 0)
-            res.status(200).send();
+            res.status(200).send(token);
         else
-            res.status(204).send();
+            res.status(400).send();
     });
 });
+
+let authenticate = (authenticationToken, owner, callback) => {
+    let query = 'UPDATE authentication SET lastActivity=? WHERE name=? AND token=?';
+    let values = [new Date(), owner, authenticationToken];
+    return con.query(query, values, (err, result) => {
+        if (err) throw err;
+        callback(result.affectedRows > 0);
+    });
+};
+
+let generateToken = () => {
+    return Math.random().toString(36).substr(2);
+};
+
+let hash = (unhashed) => {
+    let hash = 0, i, chr;
+    for (i = 0; i < unhashed.length; i++) {
+        chr = unhashed.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+    }
+    return hash
+};
