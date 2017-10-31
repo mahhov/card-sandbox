@@ -8,7 +8,8 @@ CREATE DATABASE cardSandboxDb;
 CREATE USER 'cardSandboxDbUser@localhost' IDENTIFIED BY 'password';
 GRANT ALL PRIVILEGES ON cardSandboxDb . * TO 'cardSandboxDbUser'@'localhost';
 USE cardSandboxDb
-CREATE TABLE script (name VARCHAR(20), owner VARCHAR(20), body TEXT), PRIMARY KEY(name, owner);
+...
+db-migrate up
 ```
 
 ### get up locally

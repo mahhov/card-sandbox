@@ -1,0 +1,8 @@
+{
+  "dev": {
+    "driver": "mysql",
+    "host": "localhost",
+    "user": "cardSandboxDbUser",
+    "database": "cardSandboxDb"
+  }
+}
