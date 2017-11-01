@@ -1,9 +1,11 @@
-// dependencies
+// *** dependencies ***
+
 let express = require('express');
 let mysql = require('mysql');
 let bodyParser = require('body-parser');
 
-// setup
+// *** setup ***
+
 let app = express();
 
 app.use(bodyParser.json());
@@ -31,7 +33,19 @@ con.connect((err) => {
     console.log('mysql connect');
 });
 
-// routes
+// *** routes ***
+
+app.get('/scripts', (req, res) => {
+    let query = 'SELECT name, owner, body FROM script';
+    con.query(query, (err, result) => {
+        if (err) throw err;
+        if (result.length > 0)
+            res.status(200).send(result);
+        else
+            res.status(204).send();
+    });
+});
+
 app.get('/script/:user', (req, res) => {
     let query = 'SELECT name, owner, body FROM script WHERE owner=?';
     let values = [req.params.user];
