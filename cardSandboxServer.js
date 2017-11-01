@@ -89,9 +89,22 @@ app.delete('/script/:user/:name', (req, res) => {
     });
 });
 
+app.post('/user', (req, res) => {
+    let token = generateToken();
+    let query = 'INSERT into authentication (name, hashedPassword, token, lastActivity) VALUES (?, ?, ?, ?)';
+    let values = [req.body.name, req.body.password, token, new Date()];
+    con.query(query, values, (err, result) => {
+        if (err) throw err;
+        if (result.affectedRows > 0)
+            res.status(201).send(token);
+        else
+            res.status(409).send();
+    });
+});
+
 app.post('/token', (req, res) => {
     let token = generateToken();
-    let query = 'UPDATE authentication SET token=?, lastActivity=? WHERE name=? AND hashedPassword=?'; // todo: ensure lastactivity stamp recent
+    let query = 'UPDATE authentication SET token=?, lastActivity=? WHERE name=? AND hashedPassword=?';
     let values = [token, new Date(), req.body.name, req.body.password, req.body.name];
     con.query(query, values, (err, result) => {
         if (err) throw err;
@@ -103,8 +116,9 @@ app.post('/token', (req, res) => {
 });
 
 let authenticate = (authenticationToken, owner, callback) => {
-    let query = 'UPDATE authentication SET lastActivity=? WHERE name=? AND token=?';
-    let values = [new Date(), owner, authenticationToken];
+    let now = new Date();
+    let query = 'UPDATE authentication SET lastActivity=? WHERE name=? AND token=? AND TIMESTAMPDIFF(HOUR, lastActivity, ?) < 2';
+    let values = [now, owner, authenticationToken, now];
     return con.query(query, values, (err, result) => {
         if (err) throw err;
         callback(result.affectedRows > 0);

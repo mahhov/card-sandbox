@@ -20,7 +20,7 @@ exports.up = function (db, callback) {
             name: {type: 'VARCHAR(20)', primaryKey: true},
             hashedPassword: 'VARCHAR(20)',
             token: 'VARCHAR(20)',
-            lastActivity: 'date'
+            lastActivity: 'TIMESTAMP'
         });
     });
 };
