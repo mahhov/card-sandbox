@@ -17,7 +17,7 @@ app.listen(8080, () => {
 });
 
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, POST');
     res.setHeader('Access-Control-Allow-Origin', '*');
     next();
 });
