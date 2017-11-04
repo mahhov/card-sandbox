@@ -19,6 +19,7 @@ app.listen(8080, () => {
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, POST');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, authenticationToken');
     next();
 });
 
@@ -109,8 +110,10 @@ app.post('/user', (req, res) => {
     let values = [req.body.name, req.body.password, token, new Date()];
     con.query(query, values, (err, result) => {
         if (err) throw err;
-        if (result.affectedRows > 0)
+        if (result.affectedRows > 0) {
+            res.setHeader('Content-Type', 'text/plain');
             res.status(201).send(token);
+        }
         else
             res.status(409).send();
     });
@@ -122,9 +125,10 @@ app.post('/token', (req, res) => {
     let values = [token, new Date(), req.body.name, req.body.password, req.body.name];
     con.query(query, values, (err, result) => {
         if (err) throw err;
-        if (result.affectedRows > 0)
+        if (result.affectedRows > 0) {
+            res.setHeader('Content-Type', 'text/plain');
             res.status(200).send(token);
-        else
+        } else
             res.status(400).send();
     });
 });
