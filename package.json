@@ -1,13 +1,9 @@
 {
   "name": "cardsandboxnode",
-  "version": "1.0.0",
-  "description": "",
   "main": "cardSandboxServer.js",
   "scripts": {
     "start": "node cardSandboxServer.js"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.2",
     "db-migrate": "^0.10.0-beta.24",
