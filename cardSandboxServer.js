@@ -1,18 +1,18 @@
 // *** dependencies ***
 
-let express = require('express');
-let mysql = require('mysql');
-let bodyParser = require('body-parser');
+const express = require('express');
+const bodyParser = require('body-parser');
+const pgp = require('pg-promise')();
 
 // *** setup ***
 
-let app = express();
+const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.text());
 
-let port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log('express listen', port)
 });
@@ -24,131 +24,103 @@ app.use((req, res, next) => {
     next();
 });
 
-let con = mysql.createConnection({
-    host: 'localhost',
-    user: 'cardSandboxDbUser',
-    database: 'cardSandboxDb'
-});
-
-con.connect((err) => {
-    if (err) throw err;
-    console.log('mysql connect');
-});
+const db = pgp('postgres://manukhovanesian@localhost:5432/cardsandboxdb');
 
 // *** routes ***
 
 app.get('/scripts', (req, res) => {
-    let query = 'SELECT name, owner, body FROM script';
-    con.query(query, (err, result) => {
-        if (err) throw err;
-        if (result.length > 0)
-            res.status(200).send(result);
-        else
-            res.status(204).send();
+    const query = 'SELECT name, owner, body FROM script';
+    db.many(query).then((data) => {
+        res.status(200).send(data);
+    }).catch(() => {
+        res.status(204).send();
     });
 });
 
 app.get('/script/:user', (req, res) => {
-    let query = 'SELECT name, owner, body FROM script WHERE owner=?';
-    let values = [req.params.user];
-    con.query(query, values, (err, result) => {
-        if (err) throw err;
-        if (result.length > 0)
-            res.status(200).send(result);
-        else
-            res.status(204).send();
+    const query = 'SELECT name, owner, body FROM script WHERE owner=$1';
+    const values = [req.params.user];
+    db.many(query, values).then((data) => {
+        res.status(200).send(data);
+    }).catch(() => {
+        res.status(204).send();
     });
 });
 
 app.get('/script/:user/:name', (req, res) => {
-    let query = 'SELECT name, owner, body FROM script WHERE name=? AND owner=?';
-    let values = [req.params.name, req.params.user];
-    con.query(query, values, (err, result) => {
-        if (err) throw err;
-        if (result.length > 0)
-            res.status(200).send(result[0]);
-        else
-            res.status(204).send();
+    const query = 'SELECT name, owner, body FROM script WHERE name=$1 AND owner=$2';
+    const values = [req.params.name, req.params.user];
+    db.many(query, values).then((data) => {
+        res.status(200).send(data);
+    }).catch(() => {
+        res.status(204).send();
     });
 });
 
 app.put('/script/:user/:name', (req, res) => {
-    authenticate(req.get('authenticationToken'), req.params.user, (authenticated) => {
-        if (!authenticated)
-            res.status(403).send();
-        else {
-            let query = 'INSERT INTO SCRIPT (name, owner, body) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE body=?';
-            let values = [req.params.name, req.params.user, req.body, req.body];
-            con.query(query, values, (err) => {
-                if (err) throw err;
-                res.status(200).send();
-            });
-        }
+    authenticate(req.get('authenticationToken'), req.params.user).then(() => {
+        const query = 'INSERT INTO SCRIPT (name, owner, body) VALUES ($1, $2, $3) ON CONFLICT (name, owner) DO UPDATE SET body=$3 RETURNING name';
+        const values = [req.params.name, req.params.user, req.body];
+        db.one(query, values).then(() => {
+            res.status(200).send();
+        }).catch((x) => {
+            console.log(x, query, values);
+        });
+    }).catch(() => {
+        res.status(403).send();
     });
 });
 
 app.delete('/script/:user/:name', (req, res) => {
-    authenticate(req.get('authenticationToken'), req.params.user, (authenticated) => {
-        if (!authenticated)
-            res.status(403).send();
-        else {
-            let query = 'DELETE FROM script WHERE name=? AND owner=?';
-            let values = [req.params.name, req.params.user];
-            con.query(query, values, (err, result) => {
-                if (err) throw err;
-                if (result.affectedRows > 0)
-                    res.status(200).send();
-                else
-                    res.status(204).send();
-            });
-        }
+    authenticate(req.get('authenticationToken'), req.params.user).then(() => {
+        const query = 'DELETE FROM script WHERE name=$1 AND owner=$2 RETURNING name';
+        const values = [req.params.name, req.params.user];
+        db.one(query, values).then(() => {
+            res.status(200).send();
+        }).catch(() => {
+            res.status(204).send();
+        });
+    }).catch(() => {
+        res.status(403).send();
     });
 });
 
 app.post('/user', (req, res) => {
-    let token = generateToken();
-    let query = 'INSERT into authentication (name, hashedPassword, token, lastActivity) VALUES (?, ?, ?, ?)';
-    let values = [req.body.name, req.body.password, token, new Date()];
-    con.query(query, values, (err, result) => {
-        if (err) throw err;
-        if (result.affectedRows > 0) {
-            res.setHeader('Content-Type', 'text/plain');
-            res.status(201).send(token);
-        }
-        else
-            res.status(409).send();
+    const token = generateToken();
+    const query = 'INSERT into authentication (name, hashedpassword, token, lastactivity) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)';
+    const values = [req.body.name, req.body.password, token];
+    db.none(query, values).then(() => {
+        res.setHeader('Content-Type', 'text/plain');
+        res.status(201).send(token);
+    }).catch(() => {
+        res.status(409).send();
     });
 });
 
 app.post('/token', (req, res) => {
-    let token = generateToken();
-    let query = 'UPDATE authentication SET token=?, lastActivity=? WHERE name=? AND hashedPassword=?';
-    let values = [token, new Date(), req.body.name, req.body.password, req.body.name];
-    con.query(query, values, (err, result) => {
-        if (err) throw err;
-        if (result.affectedRows > 0) {
-            res.setHeader('Content-Type', 'text/plain');
-            res.status(200).send(token);
-        } else
-            res.status(400).send();
+    const token = generateToken();
+    const query = 'UPDATE authentication SET token=$1, lastactivity=CURRENT_TIMESTAMP WHERE name=$2 AND hashedpassword=$3 RETURNING name';
+    const values = [token, req.body.name, req.body.password];
+    db.one(query, values).then(() => {
+        res.setHeader('Content-Type', 'text/plain');
+        res.status(200).send(token);
+
+    }).catch(() => {
+        res.status(400).send();
     });
 });
 
-let authenticate = (authenticationToken, owner, callback) => {
-    let now = new Date();
-    let query = 'UPDATE authentication SET lastActivity=? WHERE name=? AND token=? AND TIMESTAMPDIFF(HOUR, lastActivity, ?) < 2';
-    let values = [now, owner, authenticationToken, now];
-    return con.query(query, values, (err, result) => {
-        if (err) throw err;
-        callback(result.affectedRows > 0);
-    });
+const authenticate = (authenticationToken, owner) => {
+    const query = "UPDATE authentication SET lastactivity=CURRENT_TIMESTAMP WHERE name=$1 AND token=$2 AND lastactivity > CURRENT_TIMESTAMP - INTERVAL '2 HOURS' RETURNING name";
+    const values = [owner, authenticationToken];
+    return db.one(query, values);
 };
 
-let generateToken = () => {
+const generateToken = () => {
     return Math.random().toString(36).substr(2);
 };
 
-let hash = (unhashed) => {
+const hash = (unhashed) => {
     let hash = 0, i, chr;
     for (i = 0; i < unhashed.length; i++) {
         chr = unhashed.charCodeAt(i);

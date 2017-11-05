@@ -14,13 +14,13 @@ exports.up = function (db, callback) {
     return db.createTable('script', {
         name: {type: 'VARCHAR(20)', primaryKey: true},
         owner: {type: 'VARCHAR(20)', primaryKey: true},
-        body: 'text'
+        body: 'TEXT'
     }).then(() => {
         return db.createTable('authentication', {
             name: {type: 'VARCHAR(20)', primaryKey: true},
-            hashedPassword: 'VARCHAR(20)',
+            hashedpassword: 'VARCHAR(20)',
             token: 'VARCHAR(20)',
-            lastActivity: 'TIMESTAMP'
+            lastactivity: 'TIMESTAMP'
         });
     });
 };

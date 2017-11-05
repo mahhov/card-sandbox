@@ -1,8 +1,8 @@
 {
   "dev": {
-    "driver": "mysql",
+    "driver": "pg",
     "host": "localhost",
-    "user": "cardSandboxDbUser",
-    "database": "cardSandboxDb"
+    "user": "manukhovanesian",
+    "database": "cardsandboxdb"
   }
 }
