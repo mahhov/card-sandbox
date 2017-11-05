@@ -24,7 +24,7 @@ app.use((req, res, next) => {
     next();
 });
 
-const db = pgp('postgres://manukhovanesian@localhost:5432/cardsandboxdb');
+const db = pgp(process.env.DATABASE_URL || 'postgres://manukhovanesian@localhost:5432/cardsandboxdb');
 
 // *** routes ***
 
