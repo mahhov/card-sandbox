@@ -3,6 +3,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const pgp = require('pg-promise')();
+const fs = require('fs');
 
 // *** setup ***
 
@@ -59,9 +60,7 @@ app.get('/script/:user/:name', (req, res) => {
 
 app.put('/script/:user/:name', (req, res) => {
     authenticate(req.get('authenticationToken'), req.params.user).then(() => {
-        const query = 'INSERT INTO SCRIPT (name, owner, body) VALUES ($1, $2, $3) ON CONFLICT (name, owner) DO UPDATE SET body=$3 RETURNING name';
-        const values = [req.params.name, req.params.user, req.body];
-        db.one(query, values).then(() => {
+        insertScript(req.params.name, req.params.user, req.body).then(() => {
             res.status(200).send();
         }).catch((x) => {
             console.log(x, query, values);
@@ -92,6 +91,7 @@ app.post('/user', (req, res) => {
     db.none(query, values).then(() => {
         res.setHeader('Content-Type', 'text/plain');
         res.status(201).send(token);
+        insertDefaultScripts(req.body.name);
     }).catch(() => {
         res.status(409).send();
     });
@@ -109,6 +109,8 @@ app.post('/token', (req, res) => {
         res.status(400).send();
     });
 });
+
+// *** helpers *** 
 
 const authenticate = (authenticationToken, owner) => {
     const query = "UPDATE authentication SET lastactivity=CURRENT_TIMESTAMP WHERE name=$1 AND token=$2 AND lastactivity > CURRENT_TIMESTAMP - INTERVAL '2 HOURS' RETURNING name";
@@ -128,4 +130,17 @@ const hash = (unhashed) => {
         hash |= 0;
     }
     return hash
+};
+
+const insertScript = (name, owner, body) => {
+    const query = 'INSERT INTO SCRIPT (name, owner, body) VALUES ($1, $2, $3) ON CONFLICT (name, owner) DO UPDATE SET body=$3 RETURNING name';
+    const values = [name, owner, body];
+    return db.one(query, values);
+};
+
+const insertDefaultScripts = (owner) => {
+    fs.readFile('defaultSolitaire.script', 'utf8', function (err, data) {
+        if (err) throw err;
+        insertScript('Solitaire Example', owner, data);
+    });
 };
